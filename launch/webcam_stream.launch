@@ -1,0 +1,9 @@
+<launch>
+    <group ns="left_camera">
+        <node pkg="Sony_FDR-X3000" type="sony_stream.py" name="sony_webcam_left"/>
+    </group>
+
+    <group ns="right_camera">
+        <node pkg="Sony_FDR-X3000" type="sony_stream.py" name="sony_webcam_right"/>
+    </group>
+</launch>
