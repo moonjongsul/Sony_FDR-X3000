@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-import os.path
-import re
 import warnings
+
 warnings.filterwarnings(action='ignore')
 
+# import re
+# import os
 import sys
 import cv2
+import time
+import pyudev
 
 import rospy
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
-
 
 class CAM_INFO():
     def __init__(self):
@@ -88,7 +90,8 @@ class CAM_INFO():
     def set_format(self, value):
         if value not in ['NV12', 'YUYV']:
             value = 'NV12'
-            raise Exception(f"Pixel format wrong!!! Pixel format of camera must select in ['NV12', 'YUYV'] not [{value}]")
+            raise Exception(
+                f"Pixel format wrong!!! Pixel format of camera must select in ['NV12', 'YUYV'] not [{value}]")
         self.video_fourcc = value
 
     def set_codec(self):
@@ -100,24 +103,27 @@ class CAM_INFO():
                                                                            self.get_format()[2],
                                                                            self.get_format()[3]))
 
+
 class webcam_capture:
-    def __init__(self, device_name, fps, resolution, format):
+    def __init__(self, namespace, subsystem, serial, fps, resolution, format):
+        namespace  = str(namespace)
+        subsystem  = str(subsystem)
+        serial     = str(serial)
+        fps        = int(fps)
+        resolution = str(resolution)
+        format     = str(format)
 
         self.cam = CAM_INFO()
 
-        port = 0
+        try:
+            self.cam.set_port(self.serial2port(subsystem, serial))
+        except Exception as e:
+            rospy.logerr(e)
+            rospy.logerr("Retry with the right device name.")
+            rospy.logerr("Process is shutdown.")
+            sys.exit(0)
 
-        if isinstance(device_name, str):
-            try:
-                port = self.dev2port("" + device_name)
-            except Exception as e:
-                rospy.logerr(e)
-                rospy.logerr("Retry with the right device name.")
-                rospy.logerr("Process is shutdown.")
-                sys.exit(0)
-
-        self.cam.set_port(port)
-        self.cam.set_fps(int(fps))
+        self.cam.set_fps(fps)
 
         try:
             self.cam.set_resolution(resolution)
@@ -137,10 +143,16 @@ class webcam_capture:
         except Exception as e:
             rospy.logwarn(e)
 
-
-        self.publisher = rospy.Publisher(f"/image_raw_{device_name.split('-')[-1]}", Image, queue_size=1)
+        self.publisher = rospy.Publisher(f"/image_raw_{namespace[1:]}", Image, queue_size=1)
 
         self.bridge = CvBridge()
+
+        rospy.loginfo(f"Camera setup done. Information")
+        rospy.loginfo(f"  - cam_side:         {namespace}")
+        rospy.loginfo(f"  - cam_serial:       {serial}")
+        rospy.loginfo(f"  - cam_resolution:   {self.cam.get_capture().get(cv2.CAP_PROP_FRAME_WIDTH)} x {self.cam.get_capture().get(cv2.CAP_PROP_FRAME_HEIGHT)}")
+        rospy.loginfo(f"  - cam_FPS:          {self.cam.get_capture().get(cv2.CAP_PROP_FPS)}")
+        rospy.loginfo(f"  - cam_pixel_format: {self.cam.get_capture().get(cv2.CAP_PROP_FOURCC)}")
 
         while True:
             ret, img = self.cam.get_capture().read()
@@ -159,9 +171,38 @@ class webcam_capture:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
+            time.sleep(0.01)
+
         self.cam.get_capture().release()
         cv2.destroyAllWindows()
 
+    def serial2port(self, subsystem, serial):
+
+        context = pyudev.Context()
+
+        port = None
+
+        for device in context.list_devices(subsystem=subsystem):
+            if not port:
+                if device.get("ID_SERIAL_SHORT") == serial:
+                    test_port = int(device.get("DEVNAME")[-1])
+
+                    cap = cv2.VideoCapture(test_port)
+
+                    if cap.read()[0]:
+                        port = test_port
+
+                    cap.release()
+
+        if port is None:
+            raise Exception(
+                f"[ERROR] Serial number of device is error!!! Check the device serial number. not [{serial}]\n"
+                f"[ERROR] Command:\n"
+                f"\t\tudevadm info --name=/dev/video*")
+
+        return port
+
+    """
     def dev2port(self, dev_nm):
         port = 0
         if os.path.exists(dev_nm):
@@ -169,21 +210,29 @@ class webcam_capture:
             dev_re   = re.compile("\/dev\/video(\d+)")
             dev_info = dev_re.match(dev_path)
             if dev_info:
-                port = int(dev_info.group(1)) - 1
+                print(dev_info.group(0))
+                print(dev_info.group(1))
+
+                port = int(dev_info.group(1))
                 rospy.loginfo(f"Using default video capture device on /dev/video{port}")
         else:
             raise Exception(f"[ERROR] Device name is error!!! Device name must have '/dev/sony-camera-left' not [{dev_nm}]")
         return port
+    """
+
 
 def main():
+
     rospy.init_node('sony_stream', anonymous=True)
 
-    dev = rospy.get_param(f"/{rospy.get_namespace()}/device_name")
-    fps = rospy.get_param("/fps")
-    res = rospy.get_param("/resolution")
-    fmt = rospy.get_param("/format")
+    ns     = rospy.get_namespace()
+    serial = rospy.get_param(f"{ns}/serial")
+    subsys = rospy.get_param("/subsystem")
+    fps    = rospy.get_param("/fps")
+    resol  = rospy.get_param("/resolution")
+    format = rospy.get_param("/format")
 
-    img = webcam_capture(device_name=dev, fps=fps, resolution=res, format=fmt)
+    img = webcam_capture(ns, subsys, serial, fps, resol, format)
 
     try:
         rospy.spin()
