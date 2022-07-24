@@ -5,6 +5,8 @@ from setuptools import setup
 
 install_requires = [
     'opencv-python==4.5.5.64'
+    'opencv-contrib-python==4.5.5.64'
+    'pyudev'
 ]
 
 setup(

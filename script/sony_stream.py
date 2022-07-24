@@ -105,13 +105,13 @@ class CAM_INFO():
 
 
 class webcam_capture:
-    def __init__(self, namespace, subsystem, serial, fps, resolution, format):
-        namespace  = str(namespace)
-        subsystem  = str(subsystem)
-        serial     = str(serial)
-        fps        = int(fps)
-        resolution = str(resolution)
-        format     = str(format)
+    def __init__(self):
+        namespace  = str(rospy.get_namespace())
+        subsystem  = str(rospy.get_param("/subsystem"))
+        serial     = str(rospy.get_param(f"{namespace}/serial"))
+        fps        = int(rospy.get_param("/fps"))
+        resolution = str(rospy.get_param("/resolution"))
+        format     = str(rospy.get_param("/format"))
 
         self.cam = CAM_INFO()
 
@@ -225,14 +225,7 @@ def main():
 
     rospy.init_node('sony_stream', anonymous=True)
 
-    ns     = rospy.get_namespace()
-    serial = rospy.get_param(f"{ns}/serial")
-    subsys = rospy.get_param("/subsystem")
-    fps    = rospy.get_param("/fps")
-    resol  = rospy.get_param("/resolution")
-    format = rospy.get_param("/format")
-
-    img = webcam_capture(ns, subsys, serial, fps, resol, format)
+    img = webcam_capture()
 
     try:
         rospy.spin()
