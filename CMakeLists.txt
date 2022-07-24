@@ -17,6 +17,8 @@ catkin_package(
 )
 
 catkin_install_python(PROGRAMS
-  script/sony_stream.py
+  script/sony_single_stream.py
+  script/sony_dual_stream.py
+  script/utils/cam_prop.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

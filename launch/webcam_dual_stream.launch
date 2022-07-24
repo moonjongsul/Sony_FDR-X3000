@@ -1,0 +1,23 @@
+<launch>
+    <arg name="resolution"          default="1080" />
+    <arg name="fps"                 default="60" />
+    <arg name="format"              default="YUYV" />
+    <arg name="subsystem"           default="video4linux" />
+
+    <arg name="left_serial"         default="5311372000050" />
+    <arg name="right_serial"        default="5311372000739" />
+
+    <arg name="cam_ns"              default="dual_cam" />
+
+    <group ns="$(arg cam_ns)">
+        <param name="resolution"		type="str"      value="$(arg resolution)" />
+        <param name="fps"			    type="str"      value="$(arg fps)" />
+        <param name="format"			type="str"      value="$(arg format)" />
+        <param name="subsystem"			type="str"      value="$(arg subsystem)" />
+        <param name="cam1_serial"	    type="str"      value="$(arg left_serial)" />
+        <param name="cam2_serial"	    type="str"      value="$(arg right_serial)" />
+
+        <node pkg="Sony_FDR-X3000" type="sony_dual_stream.py" name="$(arg cam_ns)" respawn="true" />
+    </group>
+
+</launch>

@@ -17,12 +17,12 @@
 
     <group ns="$(arg cam1_ns)">
         <param name="serial"	    type="str"      value="$(arg cam1_serial)" />
-        <node pkg="Sony_FDR-X3000" type="sony_stream.py" name="$(arg cam1_ns)" respawn="true" />
+        <node pkg="Sony_FDR-X3000" type="sony_single_stream.py" name="$(arg cam1_ns)" respawn="true" />
     </group>
 
     <group ns="$(arg cam2_ns)">
         <param name="serial"		type="str"      value="$(arg cam2_serial)" />
-        <node pkg="Sony_FDR-X3000" type="sony_stream.py" name="$(arg cam2_ns)" respawn="true" />
+        <node pkg="Sony_FDR-X3000" type="sony_single_stream.py" name="$(arg cam2_ns)" respawn="true" />
     </group>
 
 </launch>
