@@ -10,12 +10,15 @@ import sys
 import cv2
 import time
 import pyudev
+import numpy as np
 
 import rospy
-from sensor_msgs.msg import Image
+# from std_msgs.msg import String
+from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
 
 from utils.cam_prop import CAM_PROP
+from utils.huffman import HuffmanCoding
 
 class webcam_capture:
     def __init__(self):
@@ -85,7 +88,9 @@ class webcam_capture:
         except Exception as e:
             rospy.logwarn(e)
 
-        self.publisher = rospy.Publisher(f"/image_raw_{namespace[1:]}", Image, queue_size=1)
+        # self.publisher_huff = rospy.Publisher(f"{namespace}/huff_compressed", String, queue_size=1)
+        self.publisher_raw  = rospy.Publisher(f"{namespace}", Image, queue_size=1)
+        # self.publisher_comp = rospy.Publisher(f"/image_raw_{namespace[1:]}/compressed", CompressedImage, queue_size=1)
 
         self.bridge = CvBridge()
 
@@ -110,14 +115,26 @@ class webcam_capture:
             elif self.cam1.get_format() == "NV12":
                 cvt_msg_format = "rgb8"
 
+            #
+            # msg = Image()
+            # msg.header.stamp = rospy.Time.now()
+            # msg.data = self.bridge.cv2_to_imgmsg(img, cvt_msg_format)
+
             msg = self.bridge.cv2_to_imgmsg(img, cvt_msg_format)
 
-            self.publisher.publish(msg)
+            self.publisher_raw.publish(msg)
+
+            # msg = CompressedImage()
+            # msg.header.stamp = rospy.Time.now()
+            # msg.format = "jpeg"
+            # msg.data = np.array(cv2.imencode('.jpg', img)[1]).tostring()
+            #
+            # self.publisher_comp.publish(msg)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
-            time.sleep(0.01)
+            # time.sleep(0.01)
 
         self.cam1.get_capture().release()
         self.cam2.get_capture().release()
@@ -149,6 +166,12 @@ class webcam_capture:
                 f"\t\tudevadm info --name=/dev/video*")
 
         return port
+
+    def huffman_comp(self, img):
+
+
+
+        return img
 
     """
     def dev2port(self, dev_nm):

@@ -18,6 +18,7 @@
         <param name="cam2_serial"	    type="str"      value="$(arg right_serial)" />
 
         <node pkg="Sony_FDR-X3000" type="sony_dual_stream.py" name="$(arg cam_ns)" respawn="true" />
+        <node pkg="image_transport" type="republish" name="compressor" args="raw in:=/$(arg cam_ns) compressed out:=/$(arg cam_ns)_comp"/>
     </group>
 
 </launch>
